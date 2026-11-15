@@ -1,0 +1,98 @@
+{
+  "project": "ralph-lab",
+  "branchName": "ralph/pipeline-vendas",
+  "description": "Pipeline de vendas, do CSV ao gráfico. Em Python 3.13 (só biblioteca padrão, módulo csv, mais pytest; sem pandas), ler vendas.csv (423 linhas) e lojas.csv (8 linhas) da raiz do repo e gerar, também na RAIZ: vendas_lojas.csv (inner join por id_loja), pivot_receita.csv (receita por região x mês) e index.html (gráfico Chart.js + parágrafo de conclusão), além de um README.md documentando a decisão de join. Anomalias propositais dos dados: 3 vendas órfãs (V00421, V00422, V00423) com id_loja=999, que não existe em lojas.csv e somam R$ 8.120,00; e a loja 108 (Batel/PR), sem nenhuma venda. Com o inner join ambas ficam fora do relatório. CRITÉRIO DE PRONTO: a suíte inteira verde com 'python -m pytest -q', com pelo menos 4 testes em tests/test_*.py. RESTRIÇÕES que valem para todas as stories: vendas.csv e lojas.csv são somente leitura, não editar nem apagar linhas; não inventar dados nem escrever os números esperados à mão nos entregáveis, tudo é calculado pelo pipeline; ler receita_brl como número (há valores como 349.5 e 1200), nunca como texto; código em src/pipeline.py, executável com 'python src/pipeline.py' a partir da raiz, regenerando os três entregáveis; ambiente Windows com Git Bash: usar 'python' e não 'python3', abrir arquivos com encoding='utf-8' e usar newline='' na escrita de CSV; não alterar scripts/ralph/ralph.sh nem scripts/ralph/CLAUDE.md; não há typecheck, lint nem verificação em navegador neste projeto, a verificação de qualidade é somente 'python -m pytest -q'; versionar os entregáveis gerados.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Estrutura do projeto e testes iniciais",
+      "description": "Como desenvolvedor, quero a estrutura do projeto e um primeiro teste rodando, para que as próximas iterações tenham onde colocar código e como verificar o resultado.",
+      "acceptanceCriteria": [
+        "Existe src/pipeline.py, executável com 'python src/pipeline.py' a partir da raiz do repo, com funções de leitura de vendas.csv e lojas.csv usando o módulo csv e encoding='utf-8'",
+        "A leitura converte receita_brl para número (não texto); valores como 349.5 e 1200 são lidos corretamente",
+        "Existe tests/test_origem.py verificando que vendas.csv tem 423 linhas de dados e lojas.csv tem 8 linhas de dados",
+        "Os testes localizam os arquivos pela raiz do repo (a partir de __file__), sem depender do diretório corrente",
+        "vendas.csv e lojas.csv não foram modificados",
+        "python -m pytest -q passa"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Join de vendas com lojas",
+      "description": "Como analista, quero cada venda acompanhada dos dados da sua loja, para poder agregar a receita por região.",
+      "acceptanceCriteria": [
+        "'python src/pipeline.py' gera vendas_lojas.csv na raiz do repo",
+        "O arquivo é o inner join de vendas.csv com lojas.csv por id_loja",
+        "O arquivo tem exatamente 420 linhas de dados (mais 1 de cabeçalho)",
+        "O arquivo mantém a coluna com o nome exato receita_brl e inclui a coluna regiao",
+        "As vendas V00421, V00422 e V00423 (id_loja=999) não aparecem no arquivo",
+        "Existe teste em tests/ verificando que vendas_lojas.csv tem 420 linhas de dados",
+        "Existe teste em tests/ verificando que a soma de receita_brl em vendas_lojas.csv é 931274.06 (tolerância 0,50)",
+        "vendas.csv e lojas.csv não foram modificados",
+        "python -m pytest -q passa"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Pivot de receita por região x mês",
+      "description": "Como gestor, quero a receita de cada região em cada mês numa tabela, para comparar o desempenho das regiões ao longo do semestre.",
+      "acceptanceCriteria": [
+        "'python src/pipeline.py' gera pivot_receita.csv na raiz do repo, calculado a partir de vendas_lojas.csv",
+        "O cabeçalho é exatamente: regiao,2026-01,2026-02,2026-03,2026-04,2026-05,2026-06",
+        "Há 4 linhas de dados em ordem alfabética: Centro-Oeste, Nordeste, Sudeste, Sul; cada linha tem 7 colunas",
+        "O mês de cada venda vem dos 7 primeiros caracteres da coluna data (YYYY-MM)",
+        "Os valores usam ponto como separador decimal e 2 casas (formato como 12345.67), sem R$ e sem separador de milhar",
+        "O arredondamento acontece só na escrita do CSV, nunca nas somas parciais",
+        "Existe teste em tests/ verificando: cabeçalho exato, 4 linhas x 7 colunas, soma de todas as células numéricas igual a 931274.06 (tolerância 0,50) e Sudeste como região de maior receita, com total 265077.49 (tolerância 0,50)",
+        "python -m pytest -q passa"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Página index.html com gráfico e conclusão",
+      "description": "Como leitor do relatório, quero uma página com o gráfico da receita mensal por região e uma conclusão escrita, para entender o resultado sem abrir os CSVs.",
+      "acceptanceCriteria": [
+        "'python src/pipeline.py' gera index.html na raiz do repo",
+        "A página é estática e contém um elemento <canvas> com um gráfico Chart.js (carregado via CDN) da receita mensal por região: uma série por região, meses de 2026-01 a 2026-06 no eixo X",
+        "Os dados do gráfico estão embutidos na própria página e vêm do pivot calculado pelo pipeline, não digitados à mão",
+        "A página contém um <p> de conclusão, em português, com pelo menos 300 caracteres",
+        "A conclusão cita a receita total (R$ 931.274,06), a região líder (Sudeste, R$ 265.077,49) e o tratamento das duas anomalias (3 vendas órfãs com id_loja=999 e a loja 108 sem vendas); os valores citados são calculados pelo pipeline e formatados no padrão brasileiro",
+        "O arquivo é escrito com encoding='utf-8' e declara <meta charset=\"utf-8\">",
+        "Existe teste em tests/ verificando que index.html contém um <canvas> e um <p> com 300 ou mais caracteres de texto",
+        "Não é necessária verificação em navegador; a página é validada só pelo pytest",
+        "python -m pytest -q passa"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "README com a documentação das anomalias",
+      "description": "Como avaliador, quero ler qual join foi escolhido e o que ele deixou de fora, para saber que a perda de dados foi uma decisão registrada e não um descuido.",
+      "acceptanceCriteria": [
+        "Existe README.md na raiz do repo, em português",
+        "O README declara que o join usado é o inner join por id_loja e explica o motivo",
+        "O README informa: 423 linhas entram, 420 saem",
+        "O README informa que as 3 vendas órfãs (V00421, V00422, V00423, id_loja=999) ficam de fora e somam R$ 8.120,00, e que a receita total cai de 939394.06 para 931274.06",
+        "O README informa que a loja 108 (Batel/PR) não aparece no relatório por não ter vendas",
+        "O README explica como regenerar os entregáveis (python src/pipeline.py) e como rodar os testes (python -m pytest -q)",
+        "'python src/pipeline.py' roda do zero sem erro e regenera os três entregáveis",
+        "vendas.csv e lojas.csv não foram modificados",
+        "python -m pytest -q passa, com pelo menos 4 testes no total"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
