@@ -72,7 +72,7 @@
         "python -m pytest -q passa"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

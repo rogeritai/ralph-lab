@@ -11,6 +11,7 @@ Started: Sun Nov 15 15:08:56     2026
 - Ao escrever números em CSV, formatar com f"{v:.2f}" (ponto decimal, 2 casas) só na escrita
 - __pycache__ está no .gitignore; não versionar .pyc
 - calcular_pivot() devolve (meses, pivot) com pivot[regiao][mes] em float não arredondado, regiões em ordem alfabética — reutilizar para gráfico/conclusão
+- formatar_brl(v) formata no padrão brasileiro (R$ 931.274,06); encontrar_anomalias(vendas, lojas) devolve (órfãs, lojas sem venda) — reutilizar em textos/README
 ---
 
 ## 2026-11-15 - US-001
@@ -43,4 +44,16 @@ Started: Sun Nov 15 15:08:56     2026
   - Meses do cabeçalho são derivados dos dados (sorted de data[:7]) — dão exatamente 2026-01..2026-06
   - Para index.html (US-004): chamar calcular_pivot() após escrever vendas_lojas.csv; total = soma de todas as células; líder = max por soma da linha
   - Totais por região: Centro-Oeste ~258k, Nordeste ~262k, Sudeste 265077.49, Sul ~146k
+---
+
+## 2026-11-15 - US-004
+- Adicionados formatar_brl(), encontrar_anomalias(), gerar_conclusao() e escrever_index() em src/pipeline.py; main() agora gera index.html
+- index.html: <meta charset="utf-8">, Chart.js via CDN (jsdelivr), <canvas id="grafico">, gráfico de linhas com uma série por região (dados embutidos via json.dumps do pivot), <p> de conclusão (~480 caracteres) com total, líder, órfãs e loja 108 — todos os valores calculados
+- Criado tests/test_index.py (charset, canvas + Chart.js, <p> >= 300 chars, valores citados na conclusão, séries/meses no gráfico)
+- Arquivos: src/pipeline.py, tests/test_index.py, index.html, scripts/ralph/prd.json, scripts/ralph/progress.txt
+- Verificação em navegador não feita (PRD dispensa); validação só por pytest
+- **Learnings for future iterations:**
+  - Conclusão é escapada com html.escape; os testes extraem <p> via regex e removem tags
+  - Para o README (US-005): receita total antes do join = sum(receita_brl de ler_vendas()); órfãs/loja 108 via encontrar_anomalias()
+  - Suíte agora tem 17 testes
 ---

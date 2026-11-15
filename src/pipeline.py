@@ -3,6 +3,8 @@
 Executar a partir da raiz do repo: python src/pipeline.py
 """
 import csv
+import html
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -10,6 +12,7 @@ VENDAS_CSV = ROOT / "vendas.csv"
 LOJAS_CSV = ROOT / "lojas.csv"
 VENDAS_LOJAS_CSV = ROOT / "vendas_lojas.csv"
 PIVOT_CSV = ROOT / "pivot_receita.csv"
+INDEX_HTML = ROOT / "index.html"
 
 
 def ler_vendas(caminho=VENDAS_CSV):
@@ -80,6 +83,81 @@ def escrever_pivot(meses, pivot, caminho=PIVOT_CSV):
             writer.writerow([regiao, *(f"{por_mes[m]:.2f}" for m in meses)])
 
 
+def formatar_brl(valor):
+    """Formata no padrão brasileiro: 931274.06 -> 'R$ 931.274,06'."""
+    texto = f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"R$ {texto}"
+
+
+def encontrar_anomalias(vendas, lojas):
+    """Devolve (vendas órfãs sem loja, lojas sem nenhuma venda)."""
+    ids_lojas = {loja["id_loja"] for loja in lojas}
+    ids_com_venda = {venda["id_loja"] for venda in vendas}
+    orfas = [v for v in vendas if v["id_loja"] not in ids_lojas]
+    sem_venda = [l for l in lojas if l["id_loja"] not in ids_com_venda]
+    return orfas, sem_venda
+
+
+def gerar_conclusao(meses, pivot, orfas, sem_venda):
+    """Texto de conclusão com valores calculados a partir do pivot e das anomalias."""
+    totais = {regiao: sum(por_mes.values()) for regiao, por_mes in pivot.items()}
+    total = sum(totais.values())
+    lider = max(totais, key=totais.get)
+    ids_orfas = ", ".join(v["id_venda"] for v in orfas)
+    ids_loja_orfa = ", ".join(sorted({v["id_loja"] for v in orfas}))
+    soma_orfas = sum(v["receita_brl"] for v in orfas)
+    lojas_txt = ", ".join(
+        f"{l['id_loja']} ({l['nome_loja']}/{l['uf']})" for l in sem_venda
+    )
+    return (
+        f"Entre {meses[0]} e {meses[-1]}, a receita total das vendas com loja "
+        f"identificada foi de {formatar_brl(total)}. A região líder foi {lider}, "
+        f"com {formatar_brl(totais[lider])} no semestre. O relatório usa inner join "
+        f"por id_loja, por isso duas anomalias ficam de fora: as {len(orfas)} vendas "
+        f"órfãs ({ids_orfas}), com id_loja={ids_loja_orfa}, que não existe no "
+        f"cadastro de lojas e somam {formatar_brl(soma_orfas)}, foram excluídas; e a "
+        f"loja {lojas_txt}, que não tem nenhuma venda registrada, não aparece no "
+        f"gráfico nem nas tabelas."
+    )
+
+
+def escrever_index(meses, pivot, conclusao, caminho=INDEX_HTML):
+    """Gera a página estática com o gráfico Chart.js e o parágrafo de conclusão."""
+    dados = {
+        "labels": meses,
+        "datasets": [
+            {"label": regiao, "data": [round(por_mes[m], 2) for m in meses]}
+            for regiao, por_mes in pivot.items()
+        ],
+    }
+    pagina = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Receita mensal por região</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>Receita mensal por região ({meses[0]} a {meses[-1]})</h1>
+<canvas id="grafico"></canvas>
+<p>{html.escape(conclusao)}</p>
+<script>
+const dados = {json.dumps(dados, ensure_ascii=False)};
+new Chart(document.getElementById("grafico"), {{
+  type: "line",
+  data: dados,
+  options: {{
+    scales: {{ y: {{ title: {{ display: true, text: "Receita (R$)" }} }} }}
+  }}
+}});
+</script>
+</body>
+</html>
+"""
+    with open(caminho, "w", encoding="utf-8", newline="") as f:
+        f.write(pagina)
+
+
 def main():
     vendas = ler_vendas()
     lojas = ler_lojas()
@@ -90,6 +168,9 @@ def main():
     meses, pivot = calcular_pivot()
     escrever_pivot(meses, pivot)
     print(f"pivot_receita.csv: {len(pivot)} regiões x {len(meses)} meses")
+    orfas, sem_venda = encontrar_anomalias(vendas, lojas)
+    escrever_index(meses, pivot, gerar_conclusao(meses, pivot, orfas, sem_venda))
+    print("index.html: gráfico + conclusão")
 
 
 if __name__ == "__main__":

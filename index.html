@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Receita mensal por região</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>Receita mensal por região (2026-01 a 2026-06)</h1>
+<canvas id="grafico"></canvas>
+<p>Entre 2026-01 e 2026-06, a receita total das vendas com loja identificada foi de R$ 931.274,06. A região líder foi Sudeste, com R$ 265.077,49 no semestre. O relatório usa inner join por id_loja, por isso duas anomalias ficam de fora: as 3 vendas órfãs (V00421, V00422, V00423), com id_loja=999, que não existe no cadastro de lojas e somam R$ 8.120,00, foram excluídas; e a loja 108 (Batel/PR), que não tem nenhuma venda registrada, não aparece no gráfico nem nas tabelas.</p>
+<script>
+const dados = {"labels": ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06"], "datasets": [{"label": "Centro-Oeste", "data": [44144.42, 48227.94, 41682.96, 38855.88, 46672.07, 38740.7]}, {"label": "Nordeste", "data": [46222.85, 48042.96, 45850.7, 44053.04, 35371.5, 42321.71]}, {"label": "Sudeste", "data": [44767.33, 48544.11, 35816.56, 46281.64, 41083.43, 48584.42]}, {"label": "Sul", "data": [27703.36, 24985.87, 19584.52, 22976.51, 25094.42, 25665.16]}]};
+new Chart(document.getElementById("grafico"), {
+  type: "line",
+  data: dados,
+  options: {
+    scales: { y: { title: { display: true, text: "Receita (R$)" } } }
+  }
+});
+</script>
+</body>
+</html>
