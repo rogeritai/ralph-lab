@@ -11,6 +11,7 @@ Started: Sun Nov 15 15:08:56     2026
 - Ao escrever números em CSV, formatar com f"{v:.2f}" (ponto decimal, 2 casas) só na escrita
 - __pycache__ está no .gitignore; não versionar .pyc
 - calcular_pivot() devolve (meses, pivot) com pivot[regiao][mes] em float não arredondado, regiões em ordem alfabética — reutilizar para gráfico/conclusão
+- README.md também é entregável gerado por pipeline.main() (gerar_readme); edite o gerador, não o arquivo
 - formatar_brl(v) formata no padrão brasileiro (R$ 931.274,06); encontrar_anomalias(vendas, lojas) devolve (órfãs, lojas sem venda) — reutilizar em textos/README
 ---
 
@@ -56,4 +57,14 @@ Started: Sun Nov 15 15:08:56     2026
   - Conclusão é escapada com html.escape; os testes extraem <p> via regex e removem tags
   - Para o README (US-005): receita total antes do join = sum(receita_brl de ler_vendas()); órfãs/loja 108 via encontrar_anomalias()
   - Suíte agora tem 17 testes
+---
+
+## 2026-11-15 - US-005
+- Adicionados gerar_readme() e escrever_readme() em src/pipeline.py; main() agora também gera README.md (português) com a decisão de inner join por id_loja e motivo, 423 entram / 420 saem, órfãs V00421-3 (id_loja=999, R$ 8.120,00), receita 939394.06 -> 931274.06, loja 108 (Batel/PR) sem vendas, e como regenerar/testar
+- README é gerado pelo pipeline para que nenhum número seja digitado à mão
+- Criado tests/test_readme.py (6 testes); suíte com 23 testes, todos passando
+- Arquivos: src/pipeline.py, tests/test_readme.py, README.md, scripts/ralph/prd.json, scripts/ralph/progress.txt
+- **Learnings for future iterations:**
+  - Editar o README à mão é inútil: python src/pipeline.py o sobrescreve; mudar o texto em gerar_readme()
+  - Totais "antes" vêm de ler_vendas() e "depois" de juntar_vendas_lojas(), formatados com f"{v:.2f}"
 ---

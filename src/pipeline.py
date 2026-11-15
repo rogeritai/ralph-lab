@@ -13,6 +13,7 @@ LOJAS_CSV = ROOT / "lojas.csv"
 VENDAS_LOJAS_CSV = ROOT / "vendas_lojas.csv"
 PIVOT_CSV = ROOT / "pivot_receita.csv"
 INDEX_HTML = ROOT / "index.html"
+README_MD = ROOT / "README.md"
 
 
 def ler_vendas(caminho=VENDAS_CSV):
@@ -158,6 +159,72 @@ new Chart(document.getElementById("grafico"), {{
         f.write(pagina)
 
 
+def gerar_readme(vendas, juntas, orfas, sem_venda):
+    """README em português documentando a decisão de join; números calculados."""
+    total_antes = sum(v["receita_brl"] for v in vendas)
+    total_depois = sum(v["receita_brl"] for v in juntas)
+    soma_orfas = sum(v["receita_brl"] for v in orfas)
+    ids_orfas = ", ".join(v["id_venda"] for v in orfas)
+    ids_loja_orfa = ", ".join(sorted({v["id_loja"] for v in orfas}))
+    lojas_txt = "\n".join(
+        f"- Loja {l['id_loja']} ({l['nome_loja']}/{l['uf']}): não aparece no "
+        f"relatório por não ter vendas."
+        for l in sem_venda
+    )
+    return f"""# Pipeline de vendas: do CSV ao gráfico
+
+> Este arquivo é gerado por `python src/pipeline.py`; os números abaixo são
+> calculados pelo pipeline a partir de `vendas.csv` e `lojas.csv`.
+
+## Entregáveis
+
+- `vendas_lojas.csv`: cada venda com os dados da sua loja (join por `id_loja`).
+- `pivot_receita.csv`: receita por região x mês.
+- `index.html`: gráfico Chart.js da receita mensal por região e conclusão.
+
+## Decisão de join
+
+O join usado é o **inner join por `id_loja`** entre `vendas.csv` e `lojas.csv`.
+
+Motivo: o relatório agrega a receita por região, e a região vem do cadastro de
+lojas. Uma venda sem loja cadastrada não tem região, então não há onde colocá-la
+no pivot nem no gráfico; e uma loja sem vendas não contribui com receita. O inner
+join mantém só as linhas que têm os dois lados, sem inventar uma região para as
+vendas órfãs. A perda de dados é intencional e está registrada abaixo.
+
+## O que fica de fora
+
+- Linhas: **{len(vendas)} linhas entram, {len(juntas)} saem**.
+- Vendas órfãs: as {len(orfas)} vendas {ids_orfas} (id_loja={ids_loja_orfa}),
+  cujo id_loja não existe em `lojas.csv`, ficam de fora e somam
+  **{formatar_brl(soma_orfas)}**.
+- Receita total: cai de **{total_antes:.2f}** (todas as vendas) para
+  **{total_depois:.2f}** (vendas com loja identificada).
+{lojas_txt}
+
+## Como usar
+
+Regenerar os entregáveis (a partir da raiz do repo):
+
+```
+python src/pipeline.py
+```
+
+Rodar os testes:
+
+```
+python -m pytest -q
+```
+
+Requisitos: Python 3.13 (só biblioteca padrão) e pytest.
+"""
+
+
+def escrever_readme(texto, caminho=README_MD):
+    with open(caminho, "w", encoding="utf-8", newline="") as f:
+        f.write(texto)
+
+
 def main():
     vendas = ler_vendas()
     lojas = ler_lojas()
@@ -171,6 +238,8 @@ def main():
     orfas, sem_venda = encontrar_anomalias(vendas, lojas)
     escrever_index(meses, pivot, gerar_conclusao(meses, pivot, orfas, sem_venda))
     print("index.html: gráfico + conclusão")
+    escrever_readme(gerar_readme(vendas, juntas, orfas, sem_venda))
+    print("README.md: decisão de join e anomalias")
 
 
 if __name__ == "__main__":
