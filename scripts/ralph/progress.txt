@@ -10,6 +10,7 @@ Started: Sun Nov 15 15:08:56     2026
 - Testes de entregáveis usam fixture module-scoped que chama pipeline.main() antes de ler o arquivo (não depende de artefato antigo)
 - Ao escrever números em CSV, formatar com f"{v:.2f}" (ponto decimal, 2 casas) só na escrita
 - __pycache__ está no .gitignore; não versionar .pyc
+- calcular_pivot() devolve (meses, pivot) com pivot[regiao][mes] em float não arredondado, regiões em ordem alfabética — reutilizar para gráfico/conclusão
 ---
 
 ## 2026-11-15 - US-001
@@ -32,4 +33,14 @@ Started: Sun Nov 15 15:08:56     2026
   - vendas_lojas.csv tem a coluna data (YYYY-MM-DD) e regiao, suficiente para o pivot do US-003
   - Para o pivot, pode-se reutilizar juntar_vendas_lojas() em memória (receita ainda float), ou reler vendas_lojas.csv convertendo receita_brl com float()
   - Os testes regeneram os entregáveis ao rodar (pipeline.main()), então git status mostra os entregáveis tocados após pytest
+---
+
+## 2026-11-15 - US-003
+- Adicionados calcular_pivot() (relê vendas_lojas.csv, soma receita por regiao x data[:7], sem arredondar) e escrever_pivot() (f"{v:.2f}" só na escrita) em src/pipeline.py; main() agora gera pivot_receita.csv
+- Criado tests/test_pivot.py (cabeçalho exato, 4x7 em ordem alfabética, soma 931274.06, formato 2 casas, Sudeste líder 265077.49)
+- Arquivos: src/pipeline.py, tests/test_pivot.py, pivot_receita.csv, scripts/ralph/prd.json, scripts/ralph/progress.txt
+- **Learnings for future iterations:**
+  - Meses do cabeçalho são derivados dos dados (sorted de data[:7]) — dão exatamente 2026-01..2026-06
+  - Para index.html (US-004): chamar calcular_pivot() após escrever vendas_lojas.csv; total = soma de todas as células; líder = max por soma da linha
+  - Totais por região: Centro-Oeste ~258k, Nordeste ~262k, Sudeste 265077.49, Sul ~146k
 ---
