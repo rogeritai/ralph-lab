@@ -7,6 +7,9 @@ Started: Sun Nov 15 15:08:56     2026
 - ler_vendas() já devolve receita_brl como float e unidades como int; id_loja continua string (comparar com strings no join)
 - Abrir CSV sempre com encoding="utf-8", newline=""
 - Qualidade = apenas `python -m pytest -q`
+- Testes de entregáveis usam fixture module-scoped que chama pipeline.main() antes de ler o arquivo (não depende de artefato antigo)
+- Ao escrever números em CSV, formatar com f"{v:.2f}" (ponto decimal, 2 casas) só na escrita
+- __pycache__ está no .gitignore; não versionar .pyc
 ---
 
 ## 2026-11-15 - US-001
@@ -17,4 +20,16 @@ Started: Sun Nov 15 15:08:56     2026
   - tests/ estava vazio; não há conftest.py — cada teste faz o próprio sys.path.insert
   - V00421..V00423 têm id_loja=999 (órfãs); loja 108 não tem vendas
   - ralph-run.log e scripts/ralph/.last-branch são artefatos do laço, não versionar
+---
+
+## 2026-11-15 - US-002
+- Adicionados juntar_vendas_lojas() (inner join por id_loja via dict) e escrever_vendas_lojas() em src/pipeline.py; main() agora gera vendas_lojas.csv (420 linhas)
+- Colunas de saída: colunas de vendas + nome_loja, regiao, uf, gerente (id_loja não duplicado)
+- Criado tests/test_join.py (420 linhas, soma 931274.06 ±0,50, colunas receita_brl/regiao, órfãs V00421-3 ausentes)
+- Criado .gitignore (__pycache__, .pyc, .pytest_cache) e removidos do índice os .pyc versionados no US-001
+- Arquivos: src/pipeline.py, tests/test_join.py, vendas_lojas.csv, .gitignore, scripts/ralph/prd.json, scripts/ralph/progress.txt
+- **Learnings for future iterations:**
+  - vendas_lojas.csv tem a coluna data (YYYY-MM-DD) e regiao, suficiente para o pivot do US-003
+  - Para o pivot, pode-se reutilizar juntar_vendas_lojas() em memória (receita ainda float), ou reler vendas_lojas.csv convertendo receita_brl com float()
+  - Os testes regeneram os entregáveis ao rodar (pipeline.main()), então git status mostra os entregáveis tocados após pytest
 ---
