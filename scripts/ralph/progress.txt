@@ -1,0 +1,20 @@
+# Ralph Progress Log
+Started: Sun Nov 15 15:08:56     2026
+
+## Codebase Patterns
+- Código em src/pipeline.py; caminhos via ROOT = Path(__file__).resolve().parent.parent (independe do cwd)
+- Testes importam o pipeline com sys.path.insert(0, ROOT/"src") e localizam arquivos via ROOT a partir de __file__
+- ler_vendas() já devolve receita_brl como float e unidades como int; id_loja continua string (comparar com strings no join)
+- Abrir CSV sempre com encoding="utf-8", newline=""
+- Qualidade = apenas `python -m pytest -q`
+---
+
+## 2026-11-15 - US-001
+- Criado src/pipeline.py com ler_vendas() / ler_lojas() (módulo csv, utf-8) e main() que imprime contagens
+- Criado tests/test_origem.py (4 testes: 423 vendas, 8 lojas, receita numérica 349.5/1200, ler_lojas)
+- Branch ralph/pipeline-vendas criada a partir de main
+- **Learnings for future iterations:**
+  - tests/ estava vazio; não há conftest.py — cada teste faz o próprio sys.path.insert
+  - V00421..V00423 têm id_loja=999 (órfãs); loja 108 não tem vendas
+  - ralph-run.log e scripts/ralph/.last-branch são artefatos do laço, não versionar
+---
